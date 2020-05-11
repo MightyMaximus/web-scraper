@@ -1,10 +1,6 @@
 const puppeteer = require('puppeteer');
 const cheerio = require('cheerio');
 
-var admin = require("firebase-admin");
-
-var serviceAccount = require("path/to/serviceAccountKey.json");
-
 const AISLES = [
     {
         name: 'Fruits & Vegetables',
@@ -26,7 +22,7 @@ const AISLES = [
         name: 'Pantry food',
         url: 'https://www.walmart.ca/en/grocery/pantry-food/N-3794'
     },
-    {
+    /*{
         name: 'International Foods',
         url: 'https://www.walmart.ca/en/grocery/international-foods/N-4356'
     },
@@ -77,15 +73,17 @@ const AISLES = [
     {
         name: 'Pets',
         url: 'https://www.walmart.ca/en/grocery/pets/N-3797'
-    }
+    }*/
 ];
 let items = [];
-function Item(name, aisle, serving, priceKG, price) { // add image
-    this.name = name;
-    this.aisle = aisle;
-    this.serving = serving;
-    this.priceKG = priceKG;
-    this.price = price;
+function Item(name, link, id, aisle, serving, priceKG, price) { // add image
+    this.name = name; // string
+    this.link = link; // string
+    this.id = id; // number
+    this.aisle = aisle; // string
+    this.serving = serving; // string
+    this.priceKG = priceKG; // number
+    this.price = price; // number
 }
 
 function scrape(html) {
@@ -107,14 +105,22 @@ function scrape(html) {
             await page.waitFor(5000); // update to optimize speed - run on script completion
             await page.content().then((html) => {
                 const $ = cheerio.load(html);
-                $('div[class=product-details-container]').each(function (i) {
+                $('div[class=thumb-inner-wrap]').each(function (k) {
                     let name = $(this).find($('.thumb-header')).text();
-                    let aisle = 'AISLES[i].name';
+                    let link = $(this).find($('a[class=product-link]')).attr('href');
+                    let id = Number(link.split('/')[4].trim());
+                    let aisle = AISLES[i].name;
+                    /*let image = $(this).find($('img[class=lazy-img]')).attr('src');*/
                     let serving = $(this).find($('.description')).text().trim();
-                    let priceKG = $(this).find($('.price-unit')).find('a').text().trim();
+                    let priceKG = Number($(this).find($('.price-unit')).find('a').text().trim().replace('$','').replace('/kg',''));
                     let price = $(this).find($('.all-price-sections')).children().eq(1).text().trim();
-                    items[i] = new Item(name, aisle, serving, priceKG, price);
-                    console.log(name + ': ' + serving + ' --- ' + priceKG + ' --- ' + price);
+                    if (price.includes('$')) {
+                        price = Number(price.replace('$',''));
+                    } else {
+                        price = Number(price.replace('¢','')) / 100;
+                    }
+                    items[k] = new Item(name, link, id, aisle, serving, priceKG, price);
+                    console.log(id + ' - ' + name + ': ' + serving + ' --- ' + priceKG + ' --- ' + price);
                 });
                 if ($('div[id=acsMainInvite]').length > 0) { // exit out of survey popup
                     page.click('.acsDeclineButton');
