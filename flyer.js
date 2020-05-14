@@ -11,6 +11,9 @@ class FlyerItem {
         this.id = id; // number
         this.store = store; // string
         this.link = link; // string
+
+        this.startDate = admin.firestore.Timestamp.fromDate(new Date(2020, 4, 14, 0, 0, 0));
+        this.endDate = admin.firestore.Timestamp.fromDate(new Date(2020, 4, 20, 23, 59, 59));
     }
 
     setPrice(price) {
@@ -20,6 +23,14 @@ class FlyerItem {
     setServing(serving) {
         this.serving = serving; // string
     }
+
+    setStartDate(date){
+        this.startDate = date; // date
+    }
+
+    setEndDate(date) {
+        this.endDate = date; // date
+    }
 }
 
 function Store(name, link) {
@@ -28,13 +39,17 @@ function Store(name, link) {
 }
 
 const items = [];
-const links = [];
+const shops = [
+    new Store('Food Basics', 'https://flipp.com/en-ca/brampton-on/flyer/3451547-food-basics-flyer?postal_code=L6X5C5'),
+    new Store('No Frills', 'https://flipp.com/en-ca/brampton-on/flyer/3452455-no-frills-weekly-flyer?postal_code=L6X5C5'),
+    new Store('FreshCo', 'https://flipp.com/en-ca/brampton-on/flyer/3451650-freshco-flyer?postal_code=L6X5C5')
+];
 
 (async () => {
     const browser = await puppeteer.launch(
         {
-            headless: false,
-            slowMo: 250
+            /*slowMo: 250,*/
+            headless: true
         }
     );
     const page = await browser.newPage();
@@ -44,18 +59,18 @@ const links = [];
     await page.waitForSelector('.content');
     /*await page.waitFor(2000);*/
 
-    await page.content().then((html) => { // ADD SCROLL
+    /*await page.content().then((html) => { // ADD SCROLL
         const $ = cheerio.load(html);
         $('a[class=flyer-container]').each(async function (i) {
-            links[i] = new Store($(this).find($('p[class=flyer-name]')).text().trim('Flyer').trimEnd(), 'https://flipp.com' + $(this).attr('href'));
-            console.log(links[i].name + ': ' + links[i].link);
+            shops[i] = new Store($(this).find($('p[class=flyer-name]')).text().trim('Flyer').trimEnd(), 'https://flipp.com' + $(this).attr('href'));
+            console.log(shops[i].name + ': ' + shops[i].link);
         });
-    });
+    });*/
 
-    let name, id, store, link;
-    for (let i = 0; i < links.length; i++) {
-        store = links[i].name;
-        await page.goto(links[i].link);
+    let name, id, store, link, price;
+    for (let shop of shops) {
+        store = shop.name;
+        await page.goto(shop.link);
         await page.waitForNavigation();
         await page.waitFor(2000);
         await page.waitForSelector('canvas');
@@ -70,17 +85,26 @@ const links = [];
         });
     }
     console.log(items.length);
-    for (let i = 0; i < items.length; i++) {
-        await page.goto(items[i].link);
+    for (let item of items) {
+        await page.goto(item.link);
         await page.waitForNavigation();
         await page.waitFor(1000);
         await page.waitForSelector('flipp-item-dialog');
-        await page.content().then((html) => {
+        await page.content().then(async (html) => {
             const $ = cheerio.load(html);
-            items[i].setPrice(Number($('flipp-price').attr('value')));
-            items[i].setServing($('.description').find($('span')).text());
-            console.log(items[i].store + ': ' + items[i].name + ' -- $' + items[i].price);
+            price = Number($('flipp-price').attr('value'));
+            if (!isNaN(price)) {
+                item.setPrice(price);
+                item.setServing($('.description').find($('span')).text());
+                db.collection('general-flyers').add(JSON.parse(JSON.stringify(item))).then(() => console.log('DONE')).catch(err => console.log(err));
+                console.log(item.store + ': ' + item.name + ' -- $' + item.price);
+            } else {
+                console.log('NOPE ----------------');
+                items.splice(item, 1);
+            }
         });
     }
+    console.log(items.length);
+
     await browser.close();
 })();
