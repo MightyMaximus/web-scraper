@@ -1,9 +1,20 @@
+/*const firebase = require('./firebase');*/
 const puppeteer = require('puppeteer');
 const cheerio = require('cheerio');
 
+/*const db = firebase.initApp;*/
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.0 Safari/537.36';
 const url = 'https://flipp.com/flyers/groceries?postal_code=';
-let pc = 'N6H2B1';
+let pc = 'L6X5C5';
+
+const admin = require("firebase-admin");
+const serviceAccount = require("./serviceAccountKey.json");
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: ""
+});
+const db = admin.firestore();
 
 class FlyerItem {
     constructor(name, id, store, link) {
@@ -40,9 +51,10 @@ function Store(name, link) {
 
 const items = [];
 const shops = [
-    new Store('Food Basics', 'https://flipp.com/en-ca/brampton-on/flyer/3451547-food-basics-flyer?postal_code=L6X5C5'),
-    new Store('No Frills', 'https://flipp.com/en-ca/brampton-on/flyer/3452455-no-frills-weekly-flyer?postal_code=L6X5C5'),
-    new Store('FreshCo', 'https://flipp.com/en-ca/brampton-on/flyer/3451650-freshco-flyer?postal_code=L6X5C5')
+    new Store('Food Basics', 'https://flipp.com/en-ca/brampton-on/flyer/3451547-food-basics-flyer?postal_code=' + pc),
+    new Store('No Frills', 'https://flipp.com/en-ca/brampton-on/flyer/3452455-no-frills-weekly-flyer?postal_code=' + pc),
+    new Store('FreshCo', 'https://flipp.com/en-ca/brampton-on/flyer/3451650-freshco-flyer?postal_code=' + pc),
+    new Store('Walmart','https://flipp.com/en-ca/brampton-on/flyer/3501678-walmart-flyer?postal_code=' + pc)
 ];
 
 (async () => {
