@@ -1,88 +1,26 @@
-/*const firebase = require('./firebase');*/
 const puppeteer = require('puppeteer');
 const cheerio = require('cheerio');
+const firebase = require('./firebase');
 
-/*const db = firebase.initApp;*/
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.0 Safari/537.36';
-const url = 'https://flipp.com/flyers/groceries?postal_code=';
-let pc = 'L6X5C5';
+const FlyerItem = require('./structs/FlyerItem.model');
+const launch = require('./inputs/launch.json');
+const stores = require('./inputs/stores.json');
 
-const admin = require("firebase-admin");
-const serviceAccount = require("./serviceAccountKey.json");
-
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: ""
-});
-const db = admin.firestore();
-
-class FlyerItem {
-    constructor(name, id, store, link) {
-        this.name = name; // string
-        this.id = id; // number
-        this.store = store; // string
-        this.link = link; // string
-
-        this.startDate = admin.firestore.Timestamp.fromDate(new Date(2020, 4, 14, 0, 0, 0));
-        this.endDate = admin.firestore.Timestamp.fromDate(new Date(2020, 4, 20, 23, 59, 59));
-    }
-
-    setPrice(price) {
-        this.price = price; // number
-    }
-
-    setServing(serving) {
-        this.serving = serving; // string
-    }
-
-    setStartDate(date){
-        this.startDate = date; // date
-    }
-
-    setEndDate(date) {
-        this.endDate = date; // date
-    }
-}
-
-function Store(name, link) {
-    this.name = name;
-    this.link = link;
-}
-
+const db = firebase.initApp;
+const pc = launch.pc;
 const items = [];
-const shops = [
-    new Store('Food Basics', 'https://flipp.com/en-ca/brampton-on/flyer/3451547-food-basics-flyer?postal_code=' + pc),
-    new Store('No Frills', 'https://flipp.com/en-ca/brampton-on/flyer/3452455-no-frills-weekly-flyer?postal_code=' + pc),
-    new Store('FreshCo', 'https://flipp.com/en-ca/brampton-on/flyer/3451650-freshco-flyer?postal_code=' + pc),
-    new Store('Walmart','https://flipp.com/en-ca/brampton-on/flyer/3501678-walmart-flyer?postal_code=' + pc)
-];
 
 (async () => {
-    const browser = await puppeteer.launch(
-        {
-            /*slowMo: 250,*/
-            headless: true
-        }
-    );
+    const browser = await puppeteer.launch();
     const page = await browser.newPage();
-    await page.setUserAgent(UA);
-    await page.goto(url + pc);
-    console.log(pc);
+    await page.setUserAgent(launch.ua);
+    await page.goto(launch.url + pc);
     await page.waitForSelector('.content');
-    /*await page.waitFor(2000);*/
 
-    /*await page.content().then((html) => { // ADD SCROLL
-        const $ = cheerio.load(html);
-        $('a[class=flyer-container]').each(async function (i) {
-            shops[i] = new Store($(this).find($('p[class=flyer-name]')).text().trim('Flyer').trimEnd(), 'https://flipp.com' + $(this).attr('href'));
-            console.log(shops[i].name + ': ' + shops[i].link);
-        });
-    });*/
-
-    let name, id, store, link, price;
-    for (let shop of shops) {
-        store = shop.name;
-        await page.goto(shop.link);
+    let name, id, shop, link, price;
+    for (let store of stores.stores) { // get all items at each store
+        shop = store.name;
+        await page.goto(store.link);
         await page.waitForNavigation();
         await page.waitFor(2000);
         await page.waitForSelector('canvas');
@@ -92,12 +30,11 @@ const shops = [
                 name = $(this).attr('aria-label');
                 id = Number($(this).attr('itemid'));
                 link = 'https://flipp.com' + $(this).attr('href');
-                items.push(new FlyerItem(name, id, store, link));
+                items.push(new FlyerItem(name, id, shop, link));
             });
         });
     }
-    console.log(items.length);
-    for (let item of items) {
+    for (let item of items) { // get prices for each item
         await page.goto(item.link);
         await page.waitForNavigation();
         await page.waitFor(1000);
@@ -108,15 +45,12 @@ const shops = [
             if (!isNaN(price)) {
                 item.setPrice(price);
                 item.setServing($('.description').find($('span')).text());
-                db.collection('general-flyers').add(JSON.parse(JSON.stringify(item))).then(() => console.log('DONE')).catch(err => console.log(err));
-                console.log(item.store + ': ' + item.name + ' -- $' + item.price);
-            } else {
-                console.log('NOPE ----------------');
+                db.collection('general-flyers').add(JSON.parse(JSON.stringify(item))).catch(err => console.log(err));
+                console.log(item.toString());
+            } else { // if an invalid flyer item was included
                 items.splice(item, 1);
             }
         });
     }
-    console.log(items.length);
-
     await browser.close();
 })();
