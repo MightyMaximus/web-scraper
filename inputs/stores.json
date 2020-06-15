@@ -1,0 +1,20 @@
+{
+  "stores": [
+    {
+      "name": "Food Basics",
+      "link": "https://flipp.com/en-ca/brampton-on/flyer/3451547-food-basics-flyer?postal_code="
+    },
+    {
+      "name": "No Frills",
+      "link": "https://flipp.com/en-ca/brampton-on/flyer/3452455-no-frills-weekly-flyer?postal_code="
+    },
+    {
+      "name": "FreshCo",
+      "link": "https://flipp.com/en-ca/brampton-on/flyer/3451650-freshco-flyer?postal_code="
+    },
+    {
+      "name": "Walmart",
+      "link": "https://flipp.com/en-ca/brampton-on/flyer/3501678-walmart-flyer?postal_code="
+    }
+  ]
+}

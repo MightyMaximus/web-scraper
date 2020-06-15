@@ -4,11 +4,12 @@ const firebase = require('./firebase');
 
 const FlyerItem = require('./structs/FlyerItem.model');
 const launch = require('./inputs/launch.json');
-const stores = require('./inputs/stores.json');
+const stores = require('./inputs/stores.json').stores;
 
+const collection = 'general-flyers';
 const db = firebase.initApp;
-const pc = launch.pc;
 const items = [];
+const pc = launch.pc;
 
 (async () => {
     const browser = await puppeteer.launch();
@@ -18,7 +19,7 @@ const items = [];
     await page.waitForSelector('.content');
 
     let name, id, shop, link, price;
-    for (let store of stores.stores) { // get all items at each store
+    for (let store of stores) { // get all items at each store
         shop = store.name;
         await page.goto(store.link);
         await page.waitForNavigation();
@@ -45,7 +46,7 @@ const items = [];
             if (!isNaN(price)) {
                 item.setPrice(price);
                 item.setServing($('.description').find($('span')).text());
-                db.collection('general-flyers').add(JSON.parse(JSON.stringify(item))).catch(err => console.log(err));
+                db.collection(collection).add(JSON.parse(JSON.stringify(item))).catch(err => console.log(err));
                 console.log(item.toString());
             } else { // if an invalid flyer item was included
                 items.splice(item, 1);

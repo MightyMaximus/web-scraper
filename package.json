@@ -1,0 +1,12 @@
+{
+  "name": "web-scraper",
+  "version": "1.0.0",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
+    "firebase": "^7.15.0",
+    "puppeteer": "^3.3.0"
+  },
+  "devDependencies": {
+    "firebase-admin": "^8.12.1"
+  }
+}
