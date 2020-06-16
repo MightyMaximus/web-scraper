@@ -1,5 +1,5 @@
 class WalmartItem {
-    constructor(name, link, id, aisle, serving, priceKG, price) { // add image
+    constructor(name, link, id, aisle, serving, priceKG, price, image) { // add image
         this.name = name; // string
         this.link = link; // string
         this.id = id; // number
@@ -7,6 +7,7 @@ class WalmartItem {
         this.serving = serving; // string
         this.priceKG = priceKG; // number
         this.price = price; // number
+        this.image = image;
     }
 
     toString() {
