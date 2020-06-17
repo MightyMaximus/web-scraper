@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer');
 const scrollPageToBottom = require('puppeteer-autoscroll-down')
 const cheerio = require('cheerio');
-/*const fs = require('fs');*/
+const fs = require('fs');
 const firebase = require('./firebase');
 
 const WalmartItem = require('./structs/WalmartItem.model');
@@ -9,7 +9,7 @@ const launch = require('./inputs/launch.json');
 const aisles = require('./inputs/aisles.json').aisles;
 
 const collection = 'walmart-inventory';
-const db = firebase.initApp;
+const db = firebase.initApp.firestore();
 let items = [];
 
 (async () => {
@@ -19,11 +19,12 @@ let items = [];
     await page.setUserAgent(launch.ua);
 
     for (let aisle of aisles) {
+        let aisle = aisles[4];
         await page.goto(aisle.url, { waitUntil: 'load' });
 
         let next = true;
         while (next) {
-            await page.waitFor(2500);
+            await page.waitFor(5000);
             await page.evaluate(_ => { // Scroll to the very top of the page
                 window.scrollTo(0, 0);
             });
@@ -45,7 +46,7 @@ let items = [];
                         price = Number(price.replace('¢','')) / 100;
                     }
                     items.push(new WalmartItem(name, link, id, aisle.name, serving, priceKG, price, image));
-                    db.collection(collection).where('id', '==', id).get().then(snap => {
+                    /*db.collection(collection).where('id', '==', id).get().then(snap => {
                         if (snap.empty) {
                             // also add image
                             db.collection(collection).add(JSON.parse(JSON.stringify(items[items.length - 1]))).catch(err => console.log(err));
@@ -54,8 +55,9 @@ let items = [];
                                db.collection(collection).doc(doc.id).update(JSON.parse(JSON.stringify(items[items.length - 1]))).catch(err => console.log(err));
                             });
                         }
-                    });
+                    });*/
                     console.log(items[items.length - 1].toString());
+                    console.log(image);
                 });
                 if ($('div[id=acsMainInvite]').length > 0) { // exit out of survey popup
                     page.click('.acsDeclineButton').then(() => console.log('POPUP CLOSED!'));
@@ -65,10 +67,11 @@ let items = [];
                 next = false;
             });
         }
-        /*fs.writeFile('./outputs/walmart-inventory.json', JSON.stringify(items), function(err) {
+        fs.writeFile('./outputs/walmart-inventory.json', JSON.stringify(items), function(err) {
             if (err) throw err;
             console.log('complete');
-        });*/
+        });
+        break;
     }
     browser.close();
 })();

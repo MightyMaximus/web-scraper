@@ -7,7 +7,7 @@ const launch = require('./inputs/launch.json');
 const stores = require('./inputs/stores.json').stores;
 
 const collection = 'general-flyers';
-const db = firebase.initApp;
+const db = firebase.initApp.firestore();
 const items = [];
 const pc = launch.pc;
 

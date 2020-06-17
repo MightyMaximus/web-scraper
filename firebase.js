@@ -5,9 +5,10 @@ function initApp() {
 
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
-        databaseURL: launch.databaseURL
+        databaseURL: launch.databaseURL,
+        storageBucket: launch.storageBucket
     });
-    return admin.firestore();
+    return admin;
 }
 
 module.exports.initApp = initApp();
