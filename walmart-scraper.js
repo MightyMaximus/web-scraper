@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer');
 const scrollPageToBottom = require('puppeteer-autoscroll-down')
 const cheerio = require('cheerio');
-const fs = require('fs');
+/*const fs = require('fs');*/
 const firebase = require('./firebase');
 
 const WalmartItem = require('./structs/WalmartItem.model');
@@ -19,7 +19,6 @@ let items = [];
     await page.setUserAgent(launch.ua);
 
     for (let aisle of aisles) {
-        let aisle = aisles[4];
         await page.goto(aisle.url, { waitUntil: 'load' });
 
         let next = true;
@@ -36,7 +35,7 @@ let items = [];
                     let name = $(this).find($('.thumb-header')).text();
                     let link = 'https://www.walmart.ca' + $(this).find($('a[class=product-link]')).attr('href');
                     let id = Number(link.split('/')[6].trim());
-                    let image = 'http://' + $(this).find($('img')).attr('src').substr(2);
+                    let image = 'http://' + $(this).find($('img')).first().attr('src').substr(2);
                     let serving = $(this).find($('.description')).text().trim();
                     let priceKG = Number($(this).find($('.price-unit')).find('a').text().trim().replace('$','').replace('/kg',''));
                     let price = $(this).find($('.all-price-sections')).children().eq(1).text().trim();
@@ -46,7 +45,7 @@ let items = [];
                         price = Number(price.replace('¢','')) / 100;
                     }
                     items.push(new WalmartItem(name, link, id, aisle.name, serving, priceKG, price, image));
-                    /*db.collection(collection).where('id', '==', id).get().then(snap => {
+                    db.collection(collection).where('id', '==', id).get().then(snap => {
                         if (snap.empty) {
                             // also add image
                             db.collection(collection).add(JSON.parse(JSON.stringify(items[items.length - 1]))).catch(err => console.log(err));
@@ -55,7 +54,7 @@ let items = [];
                                db.collection(collection).doc(doc.id).update(JSON.parse(JSON.stringify(items[items.length - 1]))).catch(err => console.log(err));
                             });
                         }
-                    });*/
+                    });
                     console.log(items[items.length - 1].toString());
                     console.log(image);
                 });
@@ -67,11 +66,10 @@ let items = [];
                 next = false;
             });
         }
-        fs.writeFile('./outputs/walmart-inventory.json', JSON.stringify(items), function(err) {
-            if (err) throw err;
-            console.log('complete');
-        });
-        break;
     }
+    /*fs.writeFile('./outputs/walmart-inventory.json', JSON.stringify(items), function(err) {
+        if (err) throw err;
+        console.log('complete');
+    });*/
     browser.close();
 })();
